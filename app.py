@@ -24,7 +24,10 @@ callback_manager = CallbackManager()
 callback_manager.register_callbacks(app, df1, df2)
 
     # return app
-
+server = app.server 
 if __name__ == '__main__':
     # app = initialize_app()
     app.run(debug=True)
+
+    # fixing the function bug with andre feedback:
+    # app = initialize_app()
