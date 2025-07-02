@@ -7,9 +7,11 @@ from utils.dataloader import KPILoader
 
 # def initialize_app():
     # Load the data
-kpi_loader = KPILoader('../project_dataset/extract - fees - data analyst.csv',
-                           '../project_dataset/extract - cash request - data analyst.csv')
-df1, df2 = kpi_loader.load_data()
+kpi_loader = KPILoader(
+    '../project_dataset/extract_fees_data_analyst.csv',
+    '../project_dataset/extract_cash request_data analyst.csv'
+)
+df_clean = kpi_loader.load_data()
 
     # Create the app
 app = dash.Dash(__name__)
@@ -21,13 +23,14 @@ app.layout = layout_creator.create_layout()
 
     # Register callbacks
 callback_manager = CallbackManager()
-callback_manager.register_callbacks(app, df1, df2)
+callback_manager.register_callbacks(app, df_clean)
 
     # return app
-server = app.server 
+server = app.server
 if __name__ == '__main__':
     # app = initialize_app()
-    app.run(debug=True)
+    # app.run_server(debug=True) # new version
+    app.run(debug=True) 
 
     # fixing the function bug with andre feedback:
     # app = initialize_app()

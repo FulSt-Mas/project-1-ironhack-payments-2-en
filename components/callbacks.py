@@ -4,14 +4,13 @@ import plotly.express as px
 import pandas as pd
 
 class CallbackManager:
-    def register_callbacks(self, app, df1, df2):
+    def register_callbacks(self, app, df_clean):
         """
         Register callbacks for the Dash application.
 
         Args:
             app (Dash): The Dash application instance.
-            df1 (DataFrame): DataFrame containing data from the first CSV file.
-            df2 (DataFrame): DataFrame containing data from the second CSV file.
+            df_clean (DataFrame): Cleaned DataFrame containing data from the merged CSV files.
         """
         @app.callback(
             Output('kpi-graph', 'figure'),
@@ -27,35 +26,79 @@ class CallbackManager:
             Returns:
                 figure (plotly.graph_objs.Figure): The Plotly figure to display.
             """
+            # Convert necessary datetime columns
+            df_clean['created_at_x'] = pd.to_datetime(df_clean['created_at_x'])
+            df_clean['updated_at_x'] = pd.to_datetime(df_clean['updated_at_x'])
+
             if selected_kpi == 'kpi1':
-                df2['created_at'] = pd.to_datetime(df2['created_at'])
-                monthly_usage = df2['created_at'].dt.to_period('M').value_counts().sort_index()
+                # At this stage, ensure that 'Cohort_by_month' is already derived from 'created_at_x'
+
+                # Filter for cohorts from June 2020 onwards
+                df_filtered = df_clean[df_clean['Cohort_by_month'] >= '2020-06']
+
+                # Monthly usage analysis based on 'Cohort_by_month'
+                # Since you wish to visualize and group by month while keeping May and November, you need not exclude them
+                monthly_usage = df_filtered['Cohort_by_month'].value_counts().sort_index()
                 monthly_usage_df = monthly_usage.reset_index()
-                monthly_usage_df['created_at'] = monthly_usage_df['created_at'].astype(str)
-                fig = px.bar(monthly_usage_df, x='created_at', y='count', title='Frequency of Service Usage over time')
+                monthly_usage_df.columns = ['Cohort_by_month', 'count']
+                monthly_usage_df['Cohort_by_month'] = monthly_usage_df['Cohort_by_month'].astype(str)
+
+                # Create a bar plot
+                fig = px.bar(monthly_usage_df, x='Cohort_by_month', y='count', title='Frequency of Service Usage Over Time From June 2020 Onwards')
+
+                # Add a trendline (as a line plot)
+                fig.add_scatter(x=monthly_usage_df['Cohort_by_month'], y=monthly_usage_df['count'], mode='lines', name='Trendline')
+
                 return fig
+
+            #     return fig
             elif selected_kpi == 'kpi2':
-                # Incident Rate by Category
-                category_counts = df1['category'].value_counts().reset_index()
-                category_counts.columns = ['Category', 'Incident Count']
-                fig = px.bar(category_counts, x='Category', y='Incident Count', title='Incident Rate by Category')
+                # Use the pre-existing 'Cohort_by_month' rather than creating a new one
+                category_month_counts = df_clean.groupby(['Cohort_by_month', 'category']).size().reset_index(name='Incident Count')
+
+                # Convert the cohort month to string for plotting
+                category_month_counts['Cohort_by_month'] = category_month_counts['Cohort_by_month'].astype(str)
+
+                # Create box plots for each category and month
+                fig = px.bar(category_month_counts, x='Cohort_by_month', y='Incident Count', color='category', barmode='group',
+                            title='Incident Rate by Category and Month')
+
+                # Add trend lines for each category
+                for category in category_month_counts['category'].unique():
+                    category_data = category_month_counts[category_month_counts['category'] == category]
+                    fig.add_scatter(x=category_data['Cohort_by_month'], y=category_data['Incident Count'], mode='lines', name=f'{category} Trend')
+
                 return fig
+
             elif selected_kpi == 'kpi3':
-                # Revenue by Cohort
-                df1['created_at'] = pd.to_datetime(df1['created_at'])
-                df1['cohort_month'] = df1['created_at'].dt.to_period('M')
-                revenue_by_cohort = df1.groupby('cohort_month')['total_amount'].sum().reset_index()
-                revenue_by_cohort['cohort_month'] = revenue_by_cohort['cohort_month'].astype(str)
-                fig = px.bar(revenue_by_cohort, x='cohort_month', y='total_amount', title='Total Revenue by Cohort Over Time')
+                # Use the pre-existing 'Cohort_by_month' field to filter and group data
+                # No need to reconvert or add a new 'cohort_month' since it's available
+
+                # Filter to include only May to October across all years
+                df_filtered = df_clean[df_clean['Cohort_by_month'].dt.month.isin([5, 6, 7, 8, 9, 10])]
+
+                # Group by the cohort months and calculate total revenue
+                revenue_by_cohort = df_filtered.groupby('Cohort_by_month')['total_amount'].sum().reset_index()
+                revenue_by_cohort.columns = ['Cohort_by_month', 'total_amount']
+
+                # Convert the cohort month to string for plotting purposes
+                revenue_by_cohort['Cohort_by_month'] = revenue_by_cohort['Cohort_by_month'].astype(str)
+
+                # Create the plot
+                fig = px.bar(revenue_by_cohort, x='Cohort_by_month', y='total_amount', title='Total Revenue by Cohort (May to October)')
+
+                # Add a trend line
+                fig.add_scatter(x=revenue_by_cohort['Cohort_by_month'], y=revenue_by_cohort['total_amount'], mode='lines', name='Trendline')
                 fig.update_layout(xaxis_tickangle=-45)
+
                 return fig
+
+
             elif selected_kpi == 'kpi4':
                 # Average Processing Time
-                df2['created_at'] = pd.to_datetime(df2['created_at'])
-                df2['updated_at'] = pd.to_datetime(df2['updated_at'])
-                df2['processing_time_days'] = (df2['updated_at'] - df2['created_at']).dt.days
-                average_processing_time = df2['processing_time_days'].mean()
-                fig = px.histogram(df2, x='processing_time_days', nbins=20, title=f'Average Processing Time: {average_processing_time:.2f} days', labels={'processing_time_days': 'Processing Time (Days)'})
+                df_clean['processing_time_days'] = (df_clean['updated_at_x'] - df_clean['created_at_x']).dt.days
+                average_processing_time = df_clean['processing_time_days'].mean()
+                fig = px.histogram(df_clean, x='processing_time_days', nbins=20, title=f'Average Processing Time: {average_processing_time:.2f} days', labels={'processing_time_days': 'Processing Time (Days)'})
                 return fig
             else:
                 return px.bar(title=f"Placeholder for {selected_kpi}")
