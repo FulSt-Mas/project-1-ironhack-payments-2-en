@@ -25,8 +25,8 @@ import pandas as pd
 
 class KPILoader:
     def __init__(self, file_path1, file_path2):
-        self.file_path1 = '/Users/massih/Code/Ironhack/1_Project/project-1-ironhack-payments-2-en/project_dataset/extract_fees_data_analyst.csv'
-        self.file_path2 = '/Users/massih/Code/Ironhack/1_Project/project-1-ironhack-payments-2-en/project_dataset/extract_cash request_data analyst.csv'
+        self.file_path1 = 'project_dataset/extract_fees_data_analyst.csv'
+        self.file_path2 = 'project_dataset/extract_cash request_data analyst.csv'
 
     def load_data(self):
         """

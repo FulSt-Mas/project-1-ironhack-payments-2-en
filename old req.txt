@@ -119,3 +119,8 @@ websocket-client==1.8.0
 Werkzeug==3.1.3
 widgetsnbextension==4.0.14
 zipp==3.23.0
+
+
+
+self.file_path1 = '/Users/massih/Code/Ironhack/1_Project/project-1-ironhack-payments-2-en/project_dataset/extract_fees_data_analyst.csv'
+self.file_path2 = '/Users/massih/Code/Ironhack/1_Project/project-1-ironhack-payments-2-en/project_dataset/extract_cash request_data analyst.csv'
